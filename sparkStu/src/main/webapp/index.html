@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+
+    <script src="js/echarts.min.js"></script>
+    <script src="js/jquery-3.2.1.js"></script>
+
+    <style>
+        body{
+            text-align:center;
+            background-color: #dbdddd;
+        }
+        .div{ margin:0 auto; width:1000px; height:800px; border:1px solid #F00}
+        /* css注释：为了观察效果设置宽度 边框 高度等样式 */
+    </style>
+
+</head>
+<body>
+<h1>卡弗卡大数据 — 新闻网话题用户浏览实时统计分析</h1>
+<div>
+    <div id="main" style="width:880px;height: 700px;float:left;">第一个</div>
+    <div id="sum" style="width:800px;height: 700px;float:left;">第二个</div>
+</div>
+
+<div>
+    <input type="submit" value="实时分析" onclick="start()" />
+</div>
+
+
+<div id="messages"></div>
+<script type="text/javascript">
+
+    var webSocket = new WebSocket('ws://localhost:8080/websocket');
+    var myChart = echarts.init(document.getElementById('main'));
+    var myChart_sum = echarts.init(document.getElementById('sum'));
+
+    webSocket.onerror = function(event) {
+        onError(event)
+    };
+    webSocket.onopen = function(event) {
+        onOpen(event)
+    };
+    webSocket.onmessage = function(event) {
+        onMessage(event)
+    };
+    function onMessage(event) {
+        var sd = JSON.parse(event.data);
+        processingData(sd);
+        titleSum(sd.titleSum);
+    }
+    function onOpen(event) {
+    }
+
+    function onError(event) {
+        alert(event.data);
+    }
+
+    function start() {
+        webSocket.send('hello');
+        return false;
+    }
+
+
+    function processingData(json){
+
+        var option = {
+            backgroundColor: '#ffffff',//背景色
+            title: {
+                text: '新闻话题浏览量【实时】排行',
+                subtext: '数据来自搜狗实验室',
+                textStyle: {
+                    fontWeight: 'normal',              //标题颜色
+                    color: '#408829'
+                },
+            },
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: {
+                    type: 'shadow'
+                }
+            },
+            legend: {
+                data: ['浏览量']
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'value',
+                boundaryGap: [0, 0.01]
+            },
+            yAxis: {
+                type: 'category',
+                data:json.titleName
+            },
+            series: [
+                {
+                    name: '浏览量',
+                    type: 'bar',
+                    label: {
+                        normal: {
+                            show: true,
+                            position: 'insideRight'
+                        }
+                    },
+                    itemStyle:{ normal:{color:'#f47209'} },
+                    data: json.titleCount
+                }
+
+            ]
+        };
+        myChart.setOption(option);
+
+    }
+
+
+    function titleSum(data){
+
+        var option = {
+            backgroundColor: '#fbfbfb',//背景色
+            title: {
+                text: '新闻话题曝光量【实时】统计',
+                subtext: '数据来自搜狗实验室'
+            },
+
+
+            tooltip : {
+                formatter: "{a} <br/>{b} : {c}%"
+            },
+            toolbox: {
+                feature: {
+                    restore: {},
+                    saveAsImage: {}
+                }
+            },
+            series: [
+                {
+                    name: '业务指标',
+                    type: 'gauge',
+                    max:50000,
+                    detail: {formatter:'{value}个话题'},
+                    data: [{value: 50, name: '话题曝光量'}]
+                }
+            ]
+        };
+
+        option.series[0].data[0].value = data;
+        myChart_sum.setOption(option, true);
+
+    }
+
+</script>
+</body>
+</html>
